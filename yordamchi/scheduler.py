@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Callable
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-TZ = ZoneInfo("Asia/Tashkent")
+try:
+    TZ = ZoneInfo("Asia/Tashkent")
+except ZoneInfoNotFoundError:  # telefonda vaqt mintaqalari bazasi bo'lmasa
+    TZ = timezone(timedelta(hours=5), "UZT")  # Toshkent: UTC+5, yozgi vaqt yo'q
 
 
 class Scheduler:

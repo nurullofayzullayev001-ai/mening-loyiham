@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from . import phone
 from .scheduler import SCHEDULER
+from .scheduler import TZ as SCHEDULER_TZ
 
 # Agent faqat shu papka ichidagi fayllar bilan ishlaydi.
 WORKSPACE = Path(__file__).resolve().parent.parent / "ishchi_papka"
@@ -84,7 +85,10 @@ def current_time(timezone: str = "Asia/Tashkent") -> str:
     try:
         now = datetime.now(ZoneInfo(timezone))
     except ZoneInfoNotFoundError as exc:
-        raise ToolError(f"Noma'lum vaqt mintaqasi: {timezone}") from exc
+        if timezone in ("Asia/Tashkent", "Asia/Samarkand"):
+            now = datetime.now(SCHEDULER_TZ)
+        else:
+            raise ToolError(f"Noma'lum vaqt mintaqasi: {timezone}") from exc
     return now.strftime("%Y-%m-%d %H:%M:%S %Z (%A)")
 
 

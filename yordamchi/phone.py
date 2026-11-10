@@ -190,7 +190,9 @@ def listen() -> str:
     if not shutil.which("termux-speech-to-text"):
         raise PhoneError("Ovozli kiritish uchun Termux:API kerak.")
     r = _run(["termux-speech-to-text"], timeout=60)
-    return r.stdout.strip()
+    # Oraliq natijalar ham chiqishi mumkin - oxirgi to'liq gapni olamiz.
+    lines = [ln.strip() for ln in r.stdout.splitlines() if ln.strip()]
+    return lines[-1] if lines else ""
 
 
 # ------------------------------------------------- internet va mahalliy musiqa

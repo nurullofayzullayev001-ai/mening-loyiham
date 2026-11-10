@@ -24,7 +24,9 @@ Men tushunadigan buyruqlar (misollar):
      rejalar | 2-rejani bekor qil
   🔎 qidir: Toshkent ob-havosi | kun.uz ni och
   📞 qo'ng'iroq qil +998901234567
-  🧮 hisobla 125*4+10"""
+  🧮 hisobla 125*4+10
+  🔊 ovozni yoq | ovozni o'chir | ovozni tekshir
+  🚪 chiqish"""
 
 # Ilova nomining turli yozilishlari -> phone.APPS kaliti
 ALIASES = {
@@ -57,8 +59,18 @@ FILLER = {
 }
 
 
+_CYR = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "yo", "ж": "j",
+    "з": "z", "и": "i", "й": "y", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o",
+    "п": "p", "р": "r", "с": "s", "т": "t", "у": "u", "ф": "f", "х": "x", "ц": "s",
+    "ч": "ch", "ш": "sh", "щ": "sh", "ъ": "'", "ы": "i", "ь": "", "э": "e", "ю": "yu",
+    "я": "ya", "ў": "o'", "қ": "q", "ғ": "g'", "ҳ": "h",
+}
+
+
 def normalize(text: str) -> str:
     text = text.lower().strip()
+    text = "".join(_CYR.get(ch, ch) for ch in text)  # kirill -> lotin
     text = re.sub(r"[‘’ʻʼ`´]", "'", text)
     text = re.sub(r"\s+", " ", text)
     return text.strip(" .!?,")
@@ -119,6 +131,10 @@ def handle(raw: str) -> str:
     text = normalize(raw)
     if not text:
         return "Buyruq bering. Masalan: Telegramni och."
+
+    if re.match(r"^(python3?|pip|pkg|apt|git|cd|ls|echo|export|source|termux-\S+|nano|bash)\b", text):
+        return ("Bu Termux buyrug'i, Yordamchiga emas. Avval 'chiqish' deb yozib "
+                "Yordamchidan chiqing, keyin shu buyruqni yozing.")
 
     if text in ("yordam", "help", "nima qila olasan", "buyruqlar", "nimalar qila olasan"):
         return HELP

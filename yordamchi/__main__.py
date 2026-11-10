@@ -48,10 +48,11 @@ def main() -> None:
     free = args.bepul or not has_key
     agent = None if free else Agent(web_search=not args.no_web)
     lock = threading.Lock()
+    voice = {"on": args.ovoz}
 
     def reply(answer: str) -> None:
         print(f"\nYordamchi: {answer}\n")
-        if args.ovoz:
+        if voice["on"]:
             phone.speak(answer)
 
     def run_scheduled(task: str) -> None:
@@ -87,7 +88,21 @@ def main() -> None:
         except (EOFError, KeyboardInterrupt):
             print("\nXayr!")
             break
-        if args.ovoz and not text:
+        low = text.lower().replace("‘", "'").replace("ʻ", "'").replace("’", "'")
+        if low in ("ovozni yoq", "ovoz yoq", "gapir", "ovozli rejim"):
+            voice["on"] = True
+            reply("Ovoz yoqildi. Endi javoblarni ovoz chiqarib aytaman. "
+                  "Gapirish uchun bo'sh holda Enter bosing.")
+            continue
+        if low in ("ovozni o'chir", "ovoz o'chir", "jim"):
+            voice["on"] = False
+            print("\nYordamchi: Ovoz o'chirildi.\n")
+            continue
+        if low in ("ovozni tekshir", "ovoz tekshir", "o'qib ber", "eshityapsanmi"):
+            print("\nYordamchi: Salom! Meni eshityapsizmi?\n")
+            phone.speak("Salom! Meni eshityapsizmi?")
+            continue
+        if voice["on"] and not text:
             try:
                 text = phone.listen()
             except phone.PhoneError as exc:

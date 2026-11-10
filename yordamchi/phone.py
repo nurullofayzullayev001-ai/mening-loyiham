@@ -179,11 +179,30 @@ def call_number(number: str) -> str:
 
 # ---------------------------------------------------------- ovoz (ixtiyoriy)
 def speak(text: str) -> None:
-    if shutil.which("termux-tts-speak"):
-        try:
-            subprocess.run(["termux-tts-speak", "-l", "uz", text], timeout=120)
-        except (OSError, subprocess.TimeoutExpired):
-            pass
+    """Javobni ovoz chiqarib o'qiydi (Termux:API).
+
+    Til YORDAMCHI_OVOZ_TILI muhit o'zgaruvchisidan olinadi (masalan uz, tr, ru);
+    berilmasa telefonning standart ovozi ishlatiladi.
+    """
+    import os
+    if not shutil.which("termux-tts-speak"):
+        print("🔇 Ovoz uchun 'pkg install termux-api' va Termux:API ilovasi kerak.")
+        return
+    # Emoji va belgilarni olib tashlaymiz - ular o'qilmaydi yoki xalaqit beradi.
+    clean = re.sub(r"[^\w\s.,!?:;'\"()+\-%/]", "", text).strip()
+    if not clean:
+        return
+    cmd = ["termux-tts-speak"]
+    lang = os.environ.get("YORDAMCHI_OVOZ_TILI", "").strip()
+    if lang:
+        cmd += ["-l", lang]
+    cmd += ["-s", "MUSIC", clean]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if r.returncode != 0 or r.stderr.strip():
+            print(f"🔇 Ovoz chiqmadi: {(r.stderr or r.stdout).strip()[:200]}")
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        print(f"🔇 Ovoz chiqmadi: {exc}")
 
 
 def listen() -> str:

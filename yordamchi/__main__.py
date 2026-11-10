@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import threading
 
 import anthropic
 
-from . import phone
+from . import bepul, phone
 from .agent import Agent
 from .scheduler import SCHEDULER
 
@@ -40,9 +41,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Yordamchi - telefoningizdagi AI agent")
     parser.add_argument("--ovoz", action="store_true", help="ovozli rejim (Termux:API kerak)")
     parser.add_argument("--no-web", action="store_true", help="veb-qidiruvni o'chirish")
+    parser.add_argument("--bepul", action="store_true", help="API kalitsiz bepul rejim")
     args = parser.parse_args()
 
-    agent = Agent(web_search=not args.no_web)
+    has_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")
+    free = args.bepul or not has_key
+    agent = None if free else Agent(web_search=not args.no_web)
     lock = threading.Lock()
 
     def reply(answer: str) -> None:
@@ -53,8 +57,14 @@ def main() -> None:
     def run_scheduled(task: str) -> None:
         print(f"\n⏰ Vaqti keldi: {task}")
         with lock:
-            bg = Agent(web_search=not args.no_web, exclude_tools=BACKGROUND_EXCLUDE)
-            answer = safe_ask(bg, f"[Rejalashtirilgan vazifa, hozir bajaring] {task}")
+            if free:
+                try:
+                    answer = bepul.run_scheduled(task)
+                except (phone.PhoneError, ValueError) as exc:
+                    answer = str(exc)
+            else:
+                bg = Agent(web_search=not args.no_web, exclude_tools=BACKGROUND_EXCLUDE)
+                answer = safe_ask(bg, f"[Rejalashtirilgan vazifa, hozir bajaring] {task}")
         if answer:
             reply(answer)
         print("Siz: ", end="", flush=True)
@@ -63,7 +73,10 @@ def main() -> None:
 
     if not phone.IS_TERMUX:
         print("ℹ️  Telefon topilmadi - havolalar kompyuter brauzerida ochiladi.")
-    print("🤖 Yordamchi tayyor! Buyruq bering. 'yangi' - yangi suhbat, 'chiqish' - chiqish.")
+    if free:
+        print("🆓 Bepul rejim (AI'siz). Buyruqlar ro'yxati: 'yordam'. Chiqish: 'chiqish'.")
+    else:
+        print("🤖 Yordamchi tayyor! Buyruq bering. 'yangi' - yangi suhbat, 'chiqish' - chiqish.")
     if args.ovoz:
         print("🎤 Ovozli rejim: Enter bosing va gapiring (yoki yozing).")
     print()
@@ -87,6 +100,11 @@ def main() -> None:
         if text.lower() in ("chiqish", "exit", "quit"):
             print("Xayr!")
             break
+        if free:
+            with lock:
+                answer = bepul.safe_handle(text)
+            reply(answer)
+            continue
         if text.lower() in ("yangi", "reset"):
             agent.reset()
             print("Yangi suhbat boshlandi.\n")

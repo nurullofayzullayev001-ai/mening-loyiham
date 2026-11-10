@@ -191,3 +191,77 @@ def listen() -> str:
         raise PhoneError("Ovozli kiritish uchun Termux:API kerak.")
     r = _run(["termux-speech-to-text"], timeout=60)
     return r.stdout.strip()
+
+
+# ------------------------------------------------- internet va mahalliy musiqa
+def has_internet() -> bool:
+    import socket
+    try:
+        socket.create_connection(("8.8.8.8", 53), timeout=2).close()
+        return True
+    except OSError:
+        return False
+
+
+_MUSIC_EXT = {".mp3", ".m4a", ".ogg", ".opus", ".wav", ".flac", ".aac"}
+
+
+def local_music() -> list:
+    """Telefondagi qo'shiqlar (Music, Download papkalari)."""
+    from pathlib import Path
+    roots = [Path.home() / "storage" / d for d in ("music", "downloads", "shared/Music", "shared/Download")]
+    roots.append(Path("/sdcard/Music"))
+    found = {}
+    for root in roots:
+        if root.is_dir():
+            try:
+                for f in root.rglob("*"):
+                    if f.suffix.lower() in _MUSIC_EXT and f.is_file():
+                        found.setdefault(f.name, f)
+            except OSError:
+                continue
+    return list(found.values())
+
+
+def play_local_music(query: str = "") -> str:
+    import random
+    files = local_music()
+    if not files:
+        raise PhoneError(
+            "Telefonda qo'shiq topilmadi. Termux'da 'termux-setup-storage' buyrug'ini "
+            "bir marta bajaring va qo'shiqlar Music yoki Download papkasida bo'lsin."
+        )
+    if query:
+        words = [w for w in query.lower().split() if len(w) > 1]
+        scored = [(sum(w in f.stem.lower() for w in words), f) for f in files]
+        best = max(s for s, _ in scored)
+        if best == 0:
+            raise PhoneError(f"Telefonda '{query}' nomli qo'shiq topilmadi.")
+        files = [f for s, f in scored if s == best]
+    song = random.choice(files)
+    if shutil.which("termux-media-player"):
+        _run(["termux-media-player", "play", str(song)])
+    else:
+        _open_uri(song.as_uri())
+    return f"Qo'yildi: {song.stem}"
+
+
+def stop_music() -> str:
+    if shutil.which("termux-media-player"):
+        _run(["termux-media-player", "stop"])
+        return "Musiqa to'xtatildi."
+    return "To'xtatish faqat telefondagi qo'shiqlar uchun ishlaydi."
+
+
+def notify(text: str) -> None:
+    if shutil.which("termux-notification"):
+        try:
+            _run(["termux-notification", "--title", "Yordamchi eslatmasi",
+                  "--content", text, "--sound", "--vibrate", "500,300,500"])
+        except PhoneError:
+            pass
+    if shutil.which("termux-vibrate"):
+        try:
+            _run(["termux-vibrate", "-d", "800"])
+        except PhoneError:
+            pass

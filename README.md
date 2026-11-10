@@ -14,6 +14,29 @@ u bajaradi:
 > Xavfsizlik uchun pul o'tkazish, xabar yuborish va qo'ng'iroqni yakuniy tasdiqlashni
 > agent qilmaydi — kerakli oynani ochadi, tugmani o'zingiz bosasiz.
 
+## 🆓 Bepul rejim (API kalitsiz)
+
+API kalit bo'lmasa, Yordamchi avtomatik **bepul rejimda** ishlaydi. Bu rejimda AI yo'q:
+buyruqlarni so'z-qoliplar orqali tushunadi, shuning uchun aniqroq gapiring.
+
+| Buyruq misoli | Internet kerakmi? |
+|---|---|
+| `Telegramni och`, `kamerani och`, `YouTube'ni och` | Yo'q |
+| `telefondagi musiqani qo'y`, `musiqani to'xtat` | Yo'q |
+| `soat nechi`, `bugun nechanchi sana`, `hisobla 125*4` | Yo'q |
+| `20 daqiqadan keyin choyni eslat`, `ertaga 6:30 da uyg'ot`, `rejalar` | Yo'q |
+| `Sevara Nazarxon qo'shig'ini qo'y` | Ha (YouTube Music) |
+| `O'tkan kunlar filmini qo'y`, `multfilm qo'y` | Ha (YouTube) |
+| `qidir: Toshkent ob-havosi`, `kun.uz ni och` | Ha |
+
+Barcha buyruqlar ro'yxati uchun `yordam` deb yozing.
+
+Telefondagi qo'shiqlarni qo'yish uchun Termux'da bir marta yozing va ruxsat bering:
+
+```bash
+termux-setup-storage
+```
+
 ## 📱 Android telefonga o'rnatish
 
 1. **F-Droid** (f-droid.org) orqali ikkita ilova o'rnating: **Termux** va **Termux:API**.
@@ -31,7 +54,7 @@ cd mening-loyiham
 pip install -r requirements.txt
 ```
 
-4. API kalitni [platform.claude.com](https://platform.claude.com) saytidan oling va saqlang:
+4. *(Ixtiyoriy — bepul rejim uchun kerak emas)* API kalitni [platform.claude.com](https://platform.claude.com) saytidan oling va saqlang:
 
 ```bash
 echo 'export ANTHROPIC_API_KEY="sk-ant-..."' >> ~/.bashrc
@@ -42,7 +65,8 @@ source ~/.bashrc
 
 ```bash
 cd mening-loyiham
-python -m yordamchi          # yozib buyruq berish
+python -m yordamchi          # yozib buyruq berish (kalit bo'lmasa - bepul rejim)
+python -m yordamchi --bepul  # kalit bo'lsa ham bepul rejim
 python -m yordamchi --ovoz   # ovozli: Enter bosing va gapiring
 ```
 
@@ -84,6 +108,7 @@ Kompyuterda video va musiqa brauzerda ochiladi; ilovalar faqat telefonda ochilad
 |---|---|
 | `yordamchi/agent.py` | Agent sikli: Claude vositani chaqiradi → natija qaytariladi → yakuniy javob |
 | `yordamchi/phone.py` | Telefon vositalari: video, musiqa, ilovalar, havolalar, ovoz |
+| `yordamchi/bepul.py` | Bepul rejim: API'siz buyruqlarni tushunish |
 | `yordamchi/scheduler.py` | Vaqtga rejalashtirish |
 | `yordamchi/tools.py` | Barcha vositalar ro'yxati va kalkulyator, vaqt, fayllar |
 | `yordamchi/__main__.py` | Terminal interfeysi |

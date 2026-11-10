@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Any, Callable
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from . import phone
+from .scheduler import SCHEDULER
+
 # Agent faqat shu papka ichidagi fayllar bilan ishlaydi.
 WORKSPACE = Path(__file__).resolve().parent.parent / "ishchi_papka"
 MAX_READ_CHARS = 100_000
@@ -198,7 +201,111 @@ TOOLS: list[dict[str, Any]] = [
     },
 ]
 
+PHONE_TOOLS: list[dict[str, Any]] = [
+    {
+        "name": "play_video",
+        "description": (
+            "YouTube'dan videoni topib, telefonda darhol qo'yadi. Foydalanuvchi "
+            "video, film, multfilm, klip, dars va h.k. ko'rmoqchi bo'lsa ishlating."
+        ),
+        "input_schema": _schema(
+            {"query": {"type": "string", "description": "Qidiruv so'zi, masalan 'Shahzoda yangi klip'"}},
+            ["query"],
+        ),
+        "strict": True,
+    },
+    {
+        "name": "play_music",
+        "description": "Qo'shiq yoki musiqani topib, telefonda qo'yadi.",
+        "input_schema": _schema(
+            {
+                "query": {"type": "string", "description": "Qo'shiqchi va/yoki qo'shiq nomi"},
+                "app": {
+                    "type": "string",
+                    "enum": ["youtube_music", "youtube", "spotify"],
+                    "description": "Qaysi ilovada; noaniq bo'lsa youtube_music",
+                },
+            },
+            ["query", "app"],
+        ),
+        "strict": True,
+    },
+    {
+        "name": "open_app",
+        "description": (
+            "Telefondagi ilovani ochadi. Nomi (telegram, instagram, youtube, "
+            "whatsapp, tiktok, spotify, chrome, xarita, kamera, sozlamalar, "
+            "click, payme, play market...) yoki paket nomi (com.example.app)."
+        ),
+        "input_schema": _schema({"name": {"type": "string"}}, ["name"]),
+        "strict": True,
+    },
+    {
+        "name": "list_apps",
+        "description": "Telefonga o'rnatilgan ilovalar paket nomlari. Noma'lum ilovani topish uchun.",
+        "input_schema": _schema(
+            {"filter": {"type": "string", "description": "Nomdagi so'z; hammasi uchun bo'sh"}},
+            ["filter"],
+        ),
+        "strict": True,
+    },
+    {
+        "name": "open_url",
+        "description": (
+            "Havolani telefonda ochadi (sayt, tg://, whatsapp://, geo:, sms: va h.k.). "
+            "Masalan web_search bilan topilgan sahifani ochish uchun."
+        ),
+        "input_schema": _schema({"url": {"type": "string"}}, ["url"]),
+        "strict": True,
+    },
+    {
+        "name": "call_number",
+        "description": "Telefon raqamini terish oynasini ochadi (qo'ng'iroqni foydalanuvchi o'zi tasdiqlaydi).",
+        "input_schema": _schema({"number": {"type": "string"}}, ["number"]),
+        "strict": True,
+    },
+    {
+        "name": "schedule_task",
+        "description": (
+            "Vazifani keyinroq, aytilgan vaqtda bajarishni rejalashtiradi "
+            "(masalan '7:00 da musiqa qo'y', '20 daqiqadan keyin eslat'). "
+            "O'sha vaqtda agent 'task' matnini buyruq sifatida bajaradi. "
+            "Toshkent vaqti. Dastur ochiq turishi kerak."
+        ),
+        "input_schema": _schema(
+            {
+                "when": {"type": "string", "description": "'HH:MM', 'YYYY-MM-DD HH:MM' yoki '+daqiqa' (masalan '+20')"},
+                "task": {"type": "string", "description": "Bajariladigan buyruq, masalan 'Yulduz Usmonova qo'shig'ini qo'y'"},
+            },
+            ["when", "task"],
+        ),
+        "strict": True,
+    },
+    {
+        "name": "list_scheduled",
+        "description": "Rejalashtirilgan vazifalar ro'yxati.",
+        "input_schema": _schema({}, []),
+        "strict": True,
+    },
+    {
+        "name": "cancel_scheduled",
+        "description": "Rejalashtirilgan vazifani raqami bo'yicha bekor qiladi.",
+        "input_schema": _schema({"job_id": {"type": "integer"}}, ["job_id"]),
+        "strict": True,
+    },
+]
+TOOLS.extend(PHONE_TOOLS)
+
 HANDLERS: dict[str, Callable[..., str]] = {
+    "play_video": phone.play_video,
+    "play_music": phone.play_music,
+    "open_app": phone.open_app,
+    "list_apps": phone.list_apps,
+    "open_url": phone.open_url,
+    "call_number": phone.call_number,
+    "schedule_task": SCHEDULER.add,
+    "list_scheduled": SCHEDULER.list,
+    "cancel_scheduled": SCHEDULER.cancel,
     "calculate": calculate,
     "current_time": current_time,
     "list_files": list_files,
@@ -217,7 +324,7 @@ def run_tool(name: str, tool_input: dict[str, Any]) -> tuple[str, bool]:
         return f"Noma'lum vosita: {name}", True
     try:
         return handler(**tool_input), False
-    except ToolError as exc:
+    except (ToolError, phone.PhoneError, ValueError) as exc:
         return str(exc), True
     except TypeError as exc:  # noto'g'ri argumentlar
         return f"Noto'g'ri argumentlar: {exc}", True

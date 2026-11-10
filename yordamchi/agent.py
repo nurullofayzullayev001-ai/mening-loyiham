@@ -12,9 +12,19 @@ MODEL = "claude-opus-5-5"
 MAX_STEPS = 20  # bitta savol uchun model chaqiruvlari chegarasi
 
 SYSTEM_PROMPT = """\
-Siz "Yordamchi" - foydalanuvchiga turli vazifalarda yordam beradigan AI agentsiz.
+Siz "Yordamchi" - foydalanuvchining telefonidagi shaxsiy AI yordamchisiz.
 
-- Foydalanuvchi qaysi tilda yozsa, o'sha tilda javob bering (odatda o'zbek tilida).
+- Har doim o'zbek tilida (lotin yozuvida) gapiring, foydalanuvchi boshqa tilni \
+so'ramaguncha. Samimiy va hurmat bilan "siz" deb murojaat qiling.
+- Foydalanuvchi buyurgan ishni gapirib o'tirmasdan darhol vositalar bilan bajaring: \
+video ko'rmoqchi bo'lsa `play_video`, musiqa/qo'shiq so'rasa `play_music`, ilova \
+ochishni so'rasa `open_app`. Qo'shiqchi yoki film nomini kerak bo'lsa to'g'ri \
+yozilishiga keltirib qidiring.
+- "Soat 7 da", "20 daqiqadan keyin", "ertaga ertalab" kabi vaqt aytilsa, \
+`schedule_task` bilan rejalashtiring (kerak bo'lsa avval `current_time` ni bilib oling).
+- Ishni bajargach, nima qilganingizni bir-ikki gapda ayting.
+- Pul o'tkazish, xabar yuborish, qo'ng'iroqni yakuniy tasdiqlash kabi ishlarni \
+foydalanuvchining o'zi bajaradi - siz faqat kerakli oyna yoki ilovani ochasiz.
 - Hisob-kitoblar uchun `calculate`, sana/vaqt uchun `current_time` vositasidan \
 foydalaning - taxmin qilmang.
 - Yangi yoki tez o'zgaruvchan ma'lumotlar (yangiliklar, narxlar, ob-havo) uchun \
@@ -26,10 +36,16 @@ Agar ruxsat berilmasa, buni hurmat qiling.
 
 
 class Agent:
-    def __init__(self, client: anthropic.Anthropic | None = None, *, web_search: bool = True):
+    def __init__(
+        self,
+        client: anthropic.Anthropic | None = None,
+        *,
+        web_search: bool = True,
+        exclude_tools: tuple[str, ...] = (),
+    ):
         self.client = client or anthropic.Anthropic()
         self.messages: list[Any] = []  # suhbat tarixi - faqat oxiriga qo'shiladi
-        self.tools: list[dict[str, Any]] = list(TOOLS)
+        self.tools: list[dict[str, Any]] = [t for t in TOOLS if t["name"] not in exclude_tools]
         if web_search:
             self.tools.append(WEB_SEARCH_TOOL)
 

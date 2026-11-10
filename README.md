@@ -1,63 +1,91 @@
-# 🤖 Yordamchi — AI agent
+# 🤖 Yordamchi — telefoningizdagi AI agent
 
-Claude (Anthropic) modeli asosida terminalda ishlaydigan umumiy AI yordamchi.
-Agent o'zi qaror qilib vositalardan (tools) foydalanadi:
+O'zbek tilida gapiradigan AI yordamchi (Claude modeli asosida). Siz buyruq berasiz,
+u bajaradi:
 
-| Vosita | Vazifasi |
-|---|---|
-| `calculate` | Matematik ifodalarni aniq hisoblash (xavfsiz, `eval` ishlatilmaydi) |
-| `current_time` | Istalgan vaqt mintaqasidagi sana/vaqt |
-| `list_files`, `read_file` | `ishchi_papka/` dagi fayllarni ko'rish va o'qish |
-| `write_file` | Fayl yozish — **har safar sizdan ruxsat so'raydi** |
-| `web_search` | Internetdan qidirish (Anthropic serverida ishlaydi) |
+- 🎬 **Video qo'yadi** — "Mehribon film qo'y", "bolalar uchun multfilm"
+- 🎵 **Musiqa qo'yadi** — "Sevara Nazarxonning qo'shig'ini qo'y" (YouTube Music / Spotify)
+- 📱 **Ilovalarni ochadi** — Telegram, Instagram, YouTube, WhatsApp, TikTok, Click, Payme, kamera...
+- ⏰ **Aytilgan vaqtda bajaradi** — "Ertalab 7:00 da musiqa qo'y", "20 daqiqadan keyin eslat"
+- 🔎 **Internetdan topadi** — yangiliklar, kurslar, ob-havo, ma'lumotlar
+- 📞 Qo'ng'iroq oynasini ochadi, 🧮 hisoblaydi, 🕐 vaqtni aytadi, 📄 fayllar bilan ishlaydi
+- 🎤 **Ovozli rejim** — gapirib buyruq berasiz, u ovoz chiqarib javob beradi
 
-## O'rnatish
+> Xavfsizlik uchun pul o'tkazish, xabar yuborish va qo'ng'iroqni yakuniy tasdiqlashni
+> agent qilmaydi — kerakli oynani ochadi, tugmani o'zingiz bosasiz.
+
+## 📱 Android telefonga o'rnatish
+
+1. **F-Droid** (f-droid.org) orqali ikkita ilova o'rnating: **Termux** va **Termux:API**.
+   (Play Market'dagi Termux eskirgan — F-Droid'dan oling.)
+2. Telefon sozlamalarida: *Ilovalar → Termux → Boshqa ilovalar ustidan ko'rsatish* →
+   **ruxsat bering** (aks holda Termux ilovalarni ocha olmaydi).
+   Ovozli rejim uchun *Termux:API* ga **mikrofon** ruxsatini ham bering.
+3. Termux'ni ochib, quyidagilarni yozing:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pkg update -y
+pkg install -y python git termux-api rust binutils
+git clone -b claude/yordamchi-oohthg https://github.com/nurullofayzullayev001-ai/mening-loyiham.git
+cd mening-loyiham
 pip install -r requirements.txt
 ```
 
-API kalitni [platform.claude.com](https://platform.claude.com) dan oling va o'rnating:
+4. API kalitni [platform.claude.com](https://platform.claude.com) saytidan oling va saqlang:
 
 ```bash
-export ANTHROPIC_API_KEY="sk-ant-..."   # Windows: set ANTHROPIC_API_KEY=sk-ant-...
+echo 'export ANTHROPIC_API_KEY="sk-ant-..."' >> ~/.bashrc
+source ~/.bashrc
 ```
 
-## Ishga tushirish
+## ▶️ Ishga tushirish
 
 ```bash
-python -m yordamchi            # veb-qidiruv bilan
-python -m yordamchi --no-web   # veb-qidiruvsiz
+cd mening-loyiham
+python -m yordamchi          # yozib buyruq berish
+python -m yordamchi --ovoz   # ovozli: Enter bosing va gapiring
 ```
 
-Buyruqlar: `yangi` — yangi suhbat, `chiqish` — dasturdan chiqish.
+Buyruqlar: `yangi` — yangi suhbat, `chiqish` — chiqish.
 
-Misol savollar:
+Misollar:
 
-- `125 ning kvadrat ildizini 3 ga ko'paytir`
-- `Toshkentda hozir soat necha?`
-- `Bugungi dollar kursini top`
-- `Menga xarid ro'yxatini yozib, xarid.txt fayliga saqla`
+```
+Siz: YouTube'da "O'tkan kunlar" filmini qo'y
+Siz: Ozodbek Nazarbekovning qo'shig'ini qo'y
+Siz: Telegramni och
+Siz: Ertaga soat 6:30 da meni uyg'otish uchun tetiklashtiruvchi musiqa qo'y
+Siz: Bugun Toshkentda ob-havo qanday?
+```
 
-## Qanday ishlaydi
+⏰ Rejalashtirilgan vazifalar dastur **ochiq turganda** bajariladi. Termux fonda
+uxlab qolmasligi uchun bildirishnomadagi **"Acquire wakelock"** tugmasini bosing.
 
-`yordamchi/agent.py` dagi sikl:
+## 💻 Kompyuterda sinab ko'rish
 
-1. Sizning xabaringiz suhbat tarixiga qo'shiladi va Claude'ga yuboriladi.
-2. Agar Claude vosita chaqirsa (`stop_reason == "tool_use"`), vosita bajariladi va
-   natija qaytarib yuboriladi.
-3. Claude yakuniy javob berguncha takrorlanadi (eng ko'pi 20 qadam).
+```bash
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY="sk-ant-..."
+python -m yordamchi
+```
 
-Model: `claude-opus-5-5`, adaptive thinking, `effort: medium`, prompt keshlash
-yoqilgan. Model so'rovni rad etsa, server avtomatik zaxira modelga o'tadi
-(`fallbacks: "default"`).
+Kompyuterda video va musiqa brauzerda ochiladi; ilovalar faqat telefonda ochiladi.
 
-## Yangi vosita qo'shish
+## ⚠️ Cheklovlar
 
-`yordamchi/tools.py` da:
+- **iPhone** qo'llab-quvvatlanmaydi — iOS tashqi dasturlarga ilovalarni boshqarishga ruxsat bermaydi.
+- Agent ilova **ichida** tugma bosa olmaydi (masalan, Telegram'da kimgadir yozish) — u ilovani
+  yoki kerakli sahifani ochib beradi.
+- Ovozli javob telefoningizda o'zbekcha ovoz (TTS) o'rnatilgan bo'lsa o'zbekcha eshitiladi.
 
-1. Funksiya yozing (natijani `str` qaytarsin, xatoda `ToolError` ko'taring).
-2. `TOOLS` ro'yxatiga uning nomi, tavsifi va `input_schema` sini qo'shing.
-3. `HANDLERS` lug'atiga nom → funksiya juftligini qo'shing.
+## 🛠 Tuzilishi
+
+| Fayl | Vazifasi |
+|---|---|
+| `yordamchi/agent.py` | Agent sikli: Claude vositani chaqiradi → natija qaytariladi → yakuniy javob |
+| `yordamchi/phone.py` | Telefon vositalari: video, musiqa, ilovalar, havolalar, ovoz |
+| `yordamchi/scheduler.py` | Vaqtga rejalashtirish |
+| `yordamchi/tools.py` | Barcha vositalar ro'yxati va kalkulyator, vaqt, fayllar |
+| `yordamchi/__main__.py` | Terminal interfeysi |
+
+Yangi ilova qo'shish: `phone.py` dagi `APPS` lug'atiga `"nomi": ("paket.nomi", None)` yozing.
